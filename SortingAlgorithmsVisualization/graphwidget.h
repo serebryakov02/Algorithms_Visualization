@@ -20,17 +20,20 @@ public:
     void setBackgroundColor(const QColor &color);
     void setSourceNode(int node);
     void setTargetNode(int node);
+    void setWeightedGraph(bool weighted);
 
 public slots:
     void shuffleNodes();
     void connectNodes();
     void runDijkstra();
+    void runBfs();
+    void runDfs();
 
 protected:
     void paintEvent(QPaintEvent *event) override;
 
 private slots:
-    void showNextDijkstraStep();
+    void showNextSearchStep();
 
 private:
     struct Edge
@@ -47,7 +50,11 @@ private:
         CheckNeighbor,
         UpdateDistance,
         FinalizeNode,
-        ShowPath
+        ShowPath,
+        DfsVisit,
+        DfsAdvance,
+        DfsBacktrack,
+        DfsFinish
     };
 
     struct AnimationStep
@@ -70,18 +77,22 @@ private:
     QVector<int> visibleDistances;
     QVector<bool> finalizedNodes;
     QVector<PathEdge> shortestPath;
-    QVector<AnimationStep> dijkstraSteps;
+    QVector<bool> activeNodes;
+    QVector<PathEdge> activeEdges;
+    QVector<PathEdge> backtrackedEdges;
+    QVector<AnimationStep> searchSteps;
     QColor nodeColor {"#22D3EE"};
     QColor backgroundColor {"#111827"};
     int sourceNode {0};
     int targetNode {7};
+    bool weightedGraph {true};
 
-    QTimer dijkstraTimer;
+    QTimer searchTimer;
     AnimationStep currentStep;
-    int dijkstraStepIndex {0};
+    int searchStepIndex {0};
 
     QPointF randomNodePosition() const;
-    void clearDijkstraState();
+    void clearSearchState();
     bool isHighlightedEdge(const Edge &edge, const PathEdge &pathEdge) const;
 };
 

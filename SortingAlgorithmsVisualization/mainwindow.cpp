@@ -80,15 +80,25 @@ void MainWindow::initGui()
     nodesLayout->addWidget(nodesLabel);
     nodesLayout->addWidget(nodesSpinBox);
 
+    auto weightedCheckBox = new QCheckBox("Weighted graph");
+    weightedCheckBox->setChecked(true);
+
     auto shuffleButton = new QPushButton("Shuffle");
     auto connectButton = new QPushButton("Connect");
     auto dijkstraButton = new QPushButton("Run Dijkstra");
+    auto bfsButton = new QPushButton("Run BFS");
+    bfsButton->setToolTip("Breadth-First Search");
+    auto dfsButton = new QPushButton("Run DFS");
+    dfsButton->setToolTip("Depth-First Search");
+    bfsButton->setEnabled(false);
+    dfsButton->setEnabled(false);
 
     auto graphSetupGroup = new QGroupBox("Graph Setup");
     graphSetupGroup->setAlignment(Qt::AlignCenter);
 
     auto graphSetupLayout = new QVBoxLayout;
     graphSetupLayout->addLayout(nodesLayout);
+    graphSetupLayout->addWidget(weightedCheckBox);
     graphSetupLayout->addWidget(shuffleButton);
     graphSetupLayout->addWidget(connectButton);
     graphSetupGroup->setLayout(graphSetupLayout);
@@ -128,10 +138,24 @@ void MainWindow::initGui()
     graphAlgorithmLayout->addWidget(dijkstraButton);
     graphAlgorithmLayout->addWidget(dijkstraComplexityLabel);
 
+    auto bfsAlgorithmLayout = new QHBoxLayout;
+    auto bfsComplexityLabel = new QLabel("O(V + E)");
+    bfsComplexityLabel->setAlignment(Qt::AlignCenter);
+    bfsAlgorithmLayout->addWidget(bfsButton);
+    bfsAlgorithmLayout->addWidget(bfsComplexityLabel);
+
+    auto dfsAlgorithmLayout = new QHBoxLayout;
+    auto dfsComplexityLabel = new QLabel("O(V + E)");
+    dfsComplexityLabel->setAlignment(Qt::AlignCenter);
+    dfsAlgorithmLayout->addWidget(dfsButton);
+    dfsAlgorithmLayout->addWidget(dfsComplexityLabel);
+
     auto graphAlgorithmsLayout = new QVBoxLayout;
     graphAlgorithmsLayout->addLayout(pathNodesLayout);
     graphAlgorithmsLayout->addLayout(graphAlgorithmHeaderLayout);
     graphAlgorithmsLayout->addLayout(graphAlgorithmLayout);
+    graphAlgorithmsLayout->addLayout(bfsAlgorithmLayout);
+    graphAlgorithmsLayout->addLayout(dfsAlgorithmLayout);
     graphAlgorithmsGroup->setLayout(graphAlgorithmsLayout);
 
     auto graphAppearanceGroup = new QGroupBox("Appearance");
@@ -178,9 +202,18 @@ void MainWindow::initGui()
             graphWidget, &GraphWidget::setSourceNode);
     connect(targetSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
             graphWidget, &GraphWidget::setTargetNode);
+    connect(weightedCheckBox, &QCheckBox::toggled, this,
+            [graphWidget, dijkstraButton, bfsButton, dfsButton](bool weighted) {
+        graphWidget->setWeightedGraph(weighted);
+        dijkstraButton->setEnabled(weighted);
+        bfsButton->setEnabled(!weighted);
+        dfsButton->setEnabled(!weighted);
+    });
     connect(shuffleButton, &QPushButton::clicked, graphWidget, &GraphWidget::shuffleNodes);
     connect(connectButton, &QPushButton::clicked, graphWidget, &GraphWidget::connectNodes);
     connect(dijkstraButton, &QPushButton::clicked, graphWidget, &GraphWidget::runDijkstra);
+    connect(bfsButton, &QPushButton::clicked, graphWidget, &GraphWidget::runBfs);
+    connect(dfsButton, &QPushButton::clicked, graphWidget, &GraphWidget::runDfs);
     connect(nodeColorButton, &QPushButton::clicked, this, [this, graphWidget]() {
         const QColor color = QColorDialog::getColor(Qt::cyan, this, "Select Color");
         graphWidget->setNodeColor(color);

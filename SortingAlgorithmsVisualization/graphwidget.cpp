@@ -3,6 +3,7 @@
 #include <QLinearGradient>
 #include <QPainter>
 #include <QRandomGenerator>
+#include <functional>
 
 namespace {
 constexpr int InfiniteDistance = 1000000000;
@@ -18,8 +19,8 @@ GraphWidget::GraphWidget(QWidget *parent)
     : QWidget(parent)
 {
     setFixedSize(800, 600);
-    dijkstraTimer.setInterval(450);
-    connect(&dijkstraTimer, &QTimer::timeout, this, &GraphWidget::showNextDijkstraStep);
+    searchTimer.setInterval(450);
+    connect(&searchTimer, &QTimer::timeout, this, &GraphWidget::showNextSearchStep);
     setNodeCount(8);
 }
 
@@ -30,7 +31,7 @@ int GraphWidget::nodeCount() const
 
 void GraphWidget::setNodeCount(int count)
 {
-    clearDijkstraState();
+    clearSearchState();
 
     nodes.clear();
     edges.clear();
@@ -42,7 +43,7 @@ void GraphWidget::setNodeCount(int count)
     sourceNode = qBound(0, sourceNode, nodes.size() - 1);
     targetNode = qBound(0, targetNode, nodes.size() - 1);
 
-    clearDijkstraState();
+    clearSearchState();
     update();
 }
 
@@ -69,20 +70,27 @@ void GraphWidget::setBackgroundColor(const QColor &color)
 void GraphWidget::setSourceNode(int node)
 {
     sourceNode = qBound(0, node - 1, nodes.size() - 1);
-    clearDijkstraState();
+    clearSearchState();
     update();
 }
 
 void GraphWidget::setTargetNode(int node)
 {
     targetNode = qBound(0, node - 1, nodes.size() - 1);
-    clearDijkstraState();
+    clearSearchState();
+    update();
+}
+
+void GraphWidget::setWeightedGraph(bool weighted)
+{
+    weightedGraph = weighted;
+    clearSearchState();
     update();
 }
 
 void GraphWidget::shuffleNodes()
 {
-    clearDijkstraState();
+    clearSearchState();
 
     for (auto &node : nodes) {
         node = randomNodePosition();
@@ -93,7 +101,7 @@ void GraphWidget::shuffleNodes()
 
 void GraphWidget::connectNodes()
 {
-    clearDijkstraState();
+    clearSearchState();
     edges.clear();
 
     if (nodes.size() < 2) {
@@ -143,7 +151,7 @@ void GraphWidget::connectNodes()
 
 void GraphWidget::runDijkstra()
 {
-    clearDijkstraState();
+    clearSearchState();
 
     if (nodes.isEmpty()) {
         update();
@@ -164,7 +172,7 @@ void GraphWidget::runDijkstra()
         adjacency[edge.to].push_back({edge.from, edge.weight});
     }
 
-    dijkstraSteps.push_back({StepType::UpdateDistance, source, -1, -1, 0});
+    searchSteps.push_back({StepType::UpdateDistance, source, -1, -1, 0});
 
     for (int step = 0; step < nodes.size(); ++step) {
         int current = -1;
@@ -181,27 +189,27 @@ void GraphWidget::runDijkstra()
             break;
         }
 
-        dijkstraSteps.push_back({StepType::SelectCurrent, current, -1, -1, distances[current]});
+        searchSteps.push_back({StepType::SelectCurrent, current, -1, -1, distances[current]});
 
         for (const auto &edge : adjacency.at(current)) {
             if (visited[edge.to]) {
                 continue;
             }
 
-            dijkstraSteps.push_back({StepType::CheckNeighbor, edge.to, current, edge.to,
+            searchSteps.push_back({StepType::CheckNeighbor, edge.to, current, edge.to,
                                      distances[edge.to]});
 
             const int candidateDistance = distances[current] + edge.weight;
             if (candidateDistance < distances[edge.to]) {
                 distances[edge.to] = candidateDistance;
                 previous[edge.to] = current;
-                dijkstraSteps.push_back({StepType::UpdateDistance, edge.to, current, edge.to,
+                searchSteps.push_back({StepType::UpdateDistance, edge.to, current, edge.to,
                                          candidateDistance});
             }
         }
 
         visited[current] = true;
-        dijkstraSteps.push_back({StepType::FinalizeNode, current, -1, -1, distances[current]});
+        searchSteps.push_back({StepType::FinalizeNode, current, -1, -1, distances[current]});
     }
 
     if (distances[target] != InfiniteDistance) {
@@ -212,25 +220,146 @@ void GraphWidget::runDijkstra()
         }
 
         for (const auto &edge : path) {
-            dijkstraSteps.push_back({StepType::ShowPath, -1, edge.from, edge.to, 0});
+            searchSteps.push_back({StepType::ShowPath, -1, edge.from, edge.to, 0});
         }
     }
 
-    showNextDijkstraStep();
-    dijkstraTimer.start();
+    showNextSearchStep();
+    searchTimer.start();
 }
 
-void GraphWidget::showNextDijkstraStep()
+void GraphWidget::runBfs()
 {
-    if (dijkstraStepIndex >= dijkstraSteps.size()) {
-        dijkstraTimer.stop();
+    clearSearchState();
+
+    if (nodes.isEmpty()) {
+        update();
+        return;
+    }
+
+    QVector<QVector<int>> adjacency(nodes.size());
+    for (const auto &edge : edges) {
+        adjacency[edge.from].push_back(edge.to);
+        adjacency[edge.to].push_back(edge.from);
+    }
+
+    QVector<int> distances(nodes.size(), InfiniteDistance);
+    QVector<int> previous(nodes.size(), -1);
+    QVector<bool> discovered(nodes.size(), false);
+    QVector<int> queue;
+    int queueHead = 0;
+
+    distances[sourceNode] = 0;
+    discovered[sourceNode] = true;
+    queue.push_back(sourceNode);
+    searchSteps.push_back({StepType::UpdateDistance, sourceNode, -1, -1, 0});
+
+    while (queueHead < queue.size()) {
+        const int current = queue.at(queueHead);
+        ++queueHead;
+
+        searchSteps.push_back({StepType::SelectCurrent, current, -1, -1, distances[current]});
+
+        if (current == targetNode) {
+            searchSteps.push_back({StepType::FinalizeNode, current, -1, -1, distances[current]});
+            break;
+        }
+
+        for (int neighbor : adjacency.at(current)) {
+            searchSteps.push_back({StepType::CheckNeighbor, neighbor, current, neighbor,
+                                     distances[neighbor]});
+
+            if (discovered[neighbor]) {
+                continue;
+            }
+
+            discovered[neighbor] = true;
+            distances[neighbor] = distances[current] + 1;
+            previous[neighbor] = current;
+            queue.push_back(neighbor);
+            searchSteps.push_back({StepType::UpdateDistance, neighbor, current, neighbor,
+                                     distances[neighbor]});
+        }
+
+        searchSteps.push_back({StepType::FinalizeNode, current, -1, -1, distances[current]});
+    }
+
+    if (distances[targetNode] != InfiniteDistance) {
+        QVector<PathEdge> path;
+
+        for (int node = targetNode; previous[node] != -1; node = previous[node]) {
+            path.prepend({previous[node], node});
+        }
+
+        for (const auto &edge : path) {
+            searchSteps.push_back({StepType::ShowPath, -1, edge.from, edge.to, 0});
+        }
+    }
+
+    showNextSearchStep();
+    searchTimer.start();
+}
+
+void GraphWidget::runDfs()
+{
+    clearSearchState();
+
+    if (nodes.isEmpty()) {
+        update();
+        return;
+    }
+
+    QVector<QVector<int>> adjacency(nodes.size());
+    for (const auto &edge : edges) {
+        adjacency[edge.from].push_back(edge.to);
+        adjacency[edge.to].push_back(edge.from);
+    }
+
+    QVector<bool> visited(nodes.size(), false);
+
+    std::function<bool(int)> dfs = [&](int node) {
+        visited[node] = true;
+        searchSteps.push_back({StepType::DfsVisit, node, -1, -1, 0});
+
+        if (node == targetNode) {
+            return true;
+        }
+
+        for (int neighbor : adjacency.at(node)) {
+            if (visited[neighbor]) {
+                continue;
+            }
+
+            searchSteps.push_back({StepType::DfsAdvance, neighbor, node, neighbor, 0});
+
+            if (dfs(neighbor)) {
+                return true;
+            }
+
+            searchSteps.push_back({StepType::DfsBacktrack, node, node, neighbor, 0});
+        }
+
+        searchSteps.push_back({StepType::DfsFinish, node, -1, -1, 0});
+        return false;
+    };
+
+    dfs(sourceNode);
+
+    showNextSearchStep();
+    searchTimer.start();
+}
+
+void GraphWidget::showNextSearchStep()
+{
+    if (searchStepIndex >= searchSteps.size()) {
+        searchTimer.stop();
         currentStep = {};
         update();
         return;
     }
 
-    currentStep = dijkstraSteps.at(dijkstraStepIndex);
-    ++dijkstraStepIndex;
+    currentStep = searchSteps.at(searchStepIndex);
+    ++searchStepIndex;
 
     if (currentStep.type == StepType::UpdateDistance) {
         visibleDistances[currentStep.node] = currentStep.distance;
@@ -238,6 +367,25 @@ void GraphWidget::showNextDijkstraStep()
         finalizedNodes[currentStep.node] = true;
     } else if (currentStep.type == StepType::ShowPath) {
         shortestPath.push_back({currentStep.from, currentStep.to});
+    } else if (currentStep.type == StepType::DfsVisit) {
+        activeNodes[currentStep.node] = true;
+    } else if (currentStep.type == StepType::DfsAdvance) {
+        activeEdges.push_back({currentStep.from, currentStep.to});
+    } else if (currentStep.type == StepType::DfsBacktrack) {
+        for (int i = activeEdges.size() - 1; i >= 0; --i) {
+            const auto &edge = activeEdges.at(i);
+            if ((edge.from == currentStep.from && edge.to == currentStep.to)
+                || (edge.from == currentStep.to && edge.to == currentStep.from)) {
+                activeEdges.removeAt(i);
+                break;
+            }
+        }
+
+        activeNodes[currentStep.to] = false;
+        backtrackedEdges.push_back({currentStep.from, currentStep.to});
+    } else if (currentStep.type == StepType::DfsFinish) {
+        finalizedNodes[currentStep.node] = true;
+        activeNodes[currentStep.node] = false;
     }
 
     update();
@@ -270,6 +418,22 @@ void GraphWidget::paintEvent(QPaintEvent *event)
         QColor edgeColor("#CBD5E1");
         int edgeWidth = 2;
 
+        for (const auto &backtrackedEdge : backtrackedEdges) {
+            if (isHighlightedEdge(edge, backtrackedEdge)) {
+                edgeColor = QColor("#EF4444");
+                edgeWidth = 3;
+                break;
+            }
+        }
+
+        for (const auto &activeEdge : activeEdges) {
+            if (isHighlightedEdge(edge, activeEdge)) {
+                edgeColor = QColor("#3B82F6");
+                edgeWidth = 4;
+                break;
+            }
+        }
+
         for (const auto &pathEdge : shortestPath) {
             if (isHighlightedEdge(edge, pathEdge)) {
                 edgeColor = QColor("#EF4444");
@@ -283,18 +447,28 @@ void GraphWidget::paintEvent(QPaintEvent *event)
             && isHighlightedEdge(edge, {currentStep.from, currentStep.to})) {
             edgeColor = QColor("#3B82F6");
             edgeWidth = 4;
+        } else if (currentStep.type == StepType::DfsAdvance
+                   && isHighlightedEdge(edge, {currentStep.from, currentStep.to})) {
+            edgeColor = QColor("#3B82F6");
+            edgeWidth = 5;
+        } else if (currentStep.type == StepType::DfsBacktrack
+                   && isHighlightedEdge(edge, {currentStep.from, currentStep.to})) {
+            edgeColor = QColor("#EF4444");
+            edgeWidth = 5;
         }
 
         painter.setPen(QPen(edgeColor, edgeWidth));
         painter.drawLine(from, to);
 
-        const QPointF center = (from + to) / 2;
-        const QRectF labelRect(center.x() - 15, center.y() - 11, 30, 22);
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(15, 23, 42, 210));
-        painter.drawRoundedRect(labelRect, 6, 6);
-        painter.setPen(QColor("#F8FAFC"));
-        painter.drawText(labelRect, Qt::AlignCenter, QString::number(edge.weight));
+        if (weightedGraph) {
+            const QPointF center = (from + to) / 2;
+            const QRectF labelRect(center.x() - 15, center.y() - 11, 30, 22);
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(QColor(15, 23, 42, 210));
+            painter.drawRoundedRect(labelRect, 6, 6);
+            painter.setPen(QColor("#F8FAFC"));
+            painter.drawText(labelRect, Qt::AlignCenter, QString::number(edge.weight));
+        }
     }
 
     painter.setPen(QPen(QColor("#F8FAFC"), 2));
@@ -308,10 +482,18 @@ void GraphWidget::paintEvent(QPaintEvent *event)
             currentNodeColor = QColor("#22C55E");
         }
 
+        if (activeNodes.value(i)) {
+            currentNodeColor = QColor("#3B82F6");
+        }
+
         if (currentStep.node == i && currentStep.type == StepType::SelectCurrent) {
             currentNodeColor = QColor("#FACC15");
         } else if (currentStep.node == i && currentStep.type == StepType::UpdateDistance) {
             currentNodeColor = QColor("#3B82F6");
+        } else if (currentStep.node == i
+                   && (currentStep.type == StepType::DfsVisit
+                       || currentStep.type == StepType::DfsBacktrack)) {
+            currentNodeColor = QColor("#FACC15");
         }
 
         painter.setBrush(currentNodeColor);
@@ -338,16 +520,19 @@ QPointF GraphWidget::randomNodePosition() const
     return QPointF(x, y);
 }
 
-void GraphWidget::clearDijkstraState()
+void GraphWidget::clearSearchState()
 {
-    dijkstraTimer.stop();
-    dijkstraSteps.clear();
+    searchTimer.stop();
+    searchSteps.clear();
     shortestPath.clear();
-    dijkstraStepIndex = 0;
+    activeEdges.clear();
+    backtrackedEdges.clear();
+    searchStepIndex = 0;
     currentStep = {};
 
     visibleDistances = QVector<int>(nodes.size(), InfiniteDistance);
     finalizedNodes = QVector<bool>(nodes.size(), false);
+    activeNodes = QVector<bool>(nodes.size(), false);
 }
 
 bool GraphWidget::isHighlightedEdge(const Edge &edge, const PathEdge &pathEdge) const
