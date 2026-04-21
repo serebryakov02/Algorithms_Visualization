@@ -89,7 +89,7 @@
              </font>
             </property>
             <property name="text">
-             <string>Complexity</string>
+             <string>Worst case</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
