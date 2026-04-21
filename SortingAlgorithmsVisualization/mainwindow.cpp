@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "graphwidget.h"
 #include "ui_mainwindow.h"
 #include <QtWidgets>
 
@@ -57,7 +58,187 @@ void MainWindow::initGui()
 
     ui->mainWidget->setLayout(hLayout);
 
-    setCentralWidget(ui->mainWidget);
+    auto graphWidget = new GraphWidget;
+
+    auto graphGroup = new QGroupBox("Graph");
+    graphGroup->setAlignment(Qt::AlignHCenter);
+
+    auto graphLayout = new QVBoxLayout;
+    graphLayout->addWidget(graphWidget);
+    graphGroup->setLayout(graphLayout);
+
+    auto graphSettingsGroup = new QGroupBox("Settings");
+    graphSettingsGroup->setAlignment(Qt::AlignHCenter);
+
+    auto nodesLabel = new QLabel("Vertices");
+    auto nodesSpinBox = new QSpinBox;
+    nodesSpinBox->setMinimum(2);
+    nodesSpinBox->setMaximum(30);
+    nodesSpinBox->setValue(graphWidget->nodeCount());
+
+    auto nodesLayout = new QHBoxLayout;
+    nodesLayout->addWidget(nodesLabel);
+    nodesLayout->addWidget(nodesSpinBox);
+
+    auto weightedCheckBox = new QCheckBox("Weighted graph");
+    weightedCheckBox->setChecked(true);
+    auto showStatusCheckBox = new QCheckBox("Show algorithm status");
+    showStatusCheckBox->setChecked(true);
+
+    auto shuffleButton = new QPushButton("Shuffle");
+    auto connectButton = new QPushButton("Connect");
+    auto dijkstraButton = new QPushButton("Run Dijkstra");
+    auto bfsButton = new QPushButton("Run BFS");
+    bfsButton->setToolTip("Breadth-First Search");
+    auto dfsButton = new QPushButton("Run DFS");
+    dfsButton->setToolTip("Depth-First Search");
+    bfsButton->setEnabled(false);
+    dfsButton->setEnabled(false);
+
+    auto graphSetupGroup = new QGroupBox("Graph Setup");
+    graphSetupGroup->setAlignment(Qt::AlignCenter);
+
+    auto graphSetupLayout = new QVBoxLayout;
+    graphSetupLayout->addLayout(nodesLayout);
+    graphSetupLayout->addWidget(weightedCheckBox);
+    graphSetupLayout->addWidget(showStatusCheckBox);
+    graphSetupLayout->addWidget(shuffleButton);
+    graphSetupLayout->addWidget(connectButton);
+    graphSetupGroup->setLayout(graphSetupLayout);
+
+    auto graphAlgorithmsGroup = new QGroupBox("Pathfinding Algorithms");
+    graphAlgorithmsGroup->setAlignment(Qt::AlignCenter);
+
+    auto sourceLabel = new QLabel("From");
+    auto sourceSpinBox = new QSpinBox;
+    sourceSpinBox->setMinimum(1);
+    sourceSpinBox->setMaximum(graphWidget->nodeCount());
+    sourceSpinBox->setValue(1);
+
+    auto targetLabel = new QLabel("To");
+    auto targetSpinBox = new QSpinBox;
+    targetSpinBox->setMinimum(1);
+    targetSpinBox->setMaximum(graphWidget->nodeCount());
+    targetSpinBox->setValue(graphWidget->nodeCount());
+
+    auto pathNodesLayout = new QHBoxLayout;
+    pathNodesLayout->addWidget(sourceLabel);
+    pathNodesLayout->addWidget(sourceSpinBox);
+    pathNodesLayout->addWidget(targetLabel);
+    pathNodesLayout->addWidget(targetSpinBox);
+
+    auto graphAlgorithmHeaderLayout = new QHBoxLayout;
+    auto graphAlgorithmHeader = new QLabel("Algorithm");
+    auto graphComplexityHeader = new QLabel("Worst case");
+    graphAlgorithmHeader->setAlignment(Qt::AlignCenter);
+    graphComplexityHeader->setAlignment(Qt::AlignCenter);
+    graphAlgorithmHeaderLayout->addWidget(graphAlgorithmHeader);
+    graphAlgorithmHeaderLayout->addWidget(graphComplexityHeader);
+
+    auto graphAlgorithmLayout = new QHBoxLayout;
+    auto dijkstraComplexityLabel = new QLabel("O(V^2 + E)");
+    dijkstraComplexityLabel->setAlignment(Qt::AlignCenter);
+    graphAlgorithmLayout->addWidget(dijkstraButton);
+    graphAlgorithmLayout->addWidget(dijkstraComplexityLabel);
+
+    auto bfsAlgorithmLayout = new QHBoxLayout;
+    auto bfsComplexityLabel = new QLabel("O(V + E)");
+    bfsComplexityLabel->setAlignment(Qt::AlignCenter);
+    bfsAlgorithmLayout->addWidget(bfsButton);
+    bfsAlgorithmLayout->addWidget(bfsComplexityLabel);
+
+    auto dfsAlgorithmLayout = new QHBoxLayout;
+    auto dfsComplexityLabel = new QLabel("O(V + E)");
+    dfsComplexityLabel->setAlignment(Qt::AlignCenter);
+    dfsAlgorithmLayout->addWidget(dfsButton);
+    dfsAlgorithmLayout->addWidget(dfsComplexityLabel);
+
+    auto graphAlgorithmsLayout = new QVBoxLayout;
+    graphAlgorithmsLayout->addLayout(pathNodesLayout);
+    graphAlgorithmsLayout->addLayout(graphAlgorithmHeaderLayout);
+    graphAlgorithmsLayout->addLayout(graphAlgorithmLayout);
+    graphAlgorithmsLayout->addLayout(bfsAlgorithmLayout);
+    graphAlgorithmsLayout->addLayout(dfsAlgorithmLayout);
+    graphAlgorithmsGroup->setLayout(graphAlgorithmsLayout);
+
+    auto graphAppearanceGroup = new QGroupBox("Appearance");
+    graphAppearanceGroup->setAlignment(Qt::AlignCenter);
+
+    auto nodeColorButton = new QPushButton("Choose...");
+    auto graphBackgroundButton = new QPushButton("Choose...");
+
+    auto nodeColorLayout = new QHBoxLayout;
+    nodeColorLayout->addWidget(new QLabel("Node color"));
+    nodeColorLayout->addWidget(nodeColorButton);
+
+    auto graphBackgroundLayout = new QHBoxLayout;
+    graphBackgroundLayout->addWidget(new QLabel("Background color"));
+    graphBackgroundLayout->addWidget(graphBackgroundButton);
+
+    auto graphAppearanceLayout = new QVBoxLayout;
+    graphAppearanceLayout->addLayout(nodeColorLayout);
+    graphAppearanceLayout->addLayout(graphBackgroundLayout);
+    graphAppearanceGroup->setLayout(graphAppearanceLayout);
+
+    auto graphSettingsLayout = new QVBoxLayout;
+    graphSettingsLayout->addWidget(graphSetupGroup);
+    graphSettingsLayout->addWidget(graphAlgorithmsGroup);
+    graphSettingsLayout->addWidget(graphAppearanceGroup);
+    graphSettingsLayout->addStretch();
+    graphSettingsGroup->setLayout(graphSettingsLayout);
+
+    connect(nodesSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [graphWidget, sourceSpinBox, targetSpinBox](int value) {
+        graphWidget->setNodeCount(value);
+        sourceSpinBox->setMaximum(value);
+        targetSpinBox->setMaximum(value);
+
+        if (sourceSpinBox->value() > value) {
+            sourceSpinBox->setValue(value);
+        }
+
+        if (targetSpinBox->value() > value) {
+            targetSpinBox->setValue(value);
+        }
+    });
+    connect(sourceSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            graphWidget, &GraphWidget::setSourceNode);
+    connect(targetSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            graphWidget, &GraphWidget::setTargetNode);
+    connect(weightedCheckBox, &QCheckBox::toggled, this,
+            [graphWidget, dijkstraButton, bfsButton, dfsButton](bool weighted) {
+        graphWidget->setWeightedGraph(weighted);
+        dijkstraButton->setEnabled(weighted);
+        bfsButton->setEnabled(!weighted);
+        dfsButton->setEnabled(!weighted);
+    });
+    connect(showStatusCheckBox, &QCheckBox::toggled,
+            graphWidget, &GraphWidget::setStatusOverlayVisible);
+    connect(shuffleButton, &QPushButton::clicked, graphWidget, &GraphWidget::shuffleNodes);
+    connect(connectButton, &QPushButton::clicked, graphWidget, &GraphWidget::connectNodes);
+    connect(dijkstraButton, &QPushButton::clicked, graphWidget, &GraphWidget::runDijkstra);
+    connect(bfsButton, &QPushButton::clicked, graphWidget, &GraphWidget::runBfs);
+    connect(dfsButton, &QPushButton::clicked, graphWidget, &GraphWidget::runDfs);
+    connect(nodeColorButton, &QPushButton::clicked, this, [this, graphWidget]() {
+        const QColor color = QColorDialog::getColor(Qt::cyan, this, "Select Color");
+        graphWidget->setNodeColor(color);
+    });
+    connect(graphBackgroundButton, &QPushButton::clicked, this, [this, graphWidget]() {
+        const QColor color = QColorDialog::getColor(Qt::black, this, "Select Color");
+        graphWidget->setBackgroundColor(color);
+    });
+
+    auto graphTab = new QWidget;
+    auto graphTabLayout = new QHBoxLayout;
+    graphTabLayout->addWidget(graphGroup);
+    graphTabLayout->addWidget(graphSettingsGroup);
+    graphTab->setLayout(graphTabLayout);
+
+    auto tabWidget = new QTabWidget;
+    tabWidget->addTab(ui->mainWidget, "Sorting Algorithms");
+    tabWidget->addTab(graphTab, "Graph Visualizer");
+
+    setCentralWidget(tabWidget);
 }
 
 void MainWindow::on_horizontalSliderSize_valueChanged(int value)
