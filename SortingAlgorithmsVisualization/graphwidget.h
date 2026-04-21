@@ -3,9 +3,12 @@
 
 #include <QColor>
 #include <QPointF>
+#include <QString>
 #include <QTimer>
 #include <QVector>
 #include <QWidget>
+
+class QPainter;
 
 class GraphWidget : public QWidget
 {
@@ -21,6 +24,7 @@ public:
     void setSourceNode(int node);
     void setTargetNode(int node);
     void setWeightedGraph(bool weighted);
+    void setStatusOverlayVisible(bool visible);
 
 public slots:
     void shuffleNodes();
@@ -57,6 +61,14 @@ private:
         DfsFinish
     };
 
+    enum class AlgorithmType
+    {
+        None,
+        Dijkstra,
+        Bfs,
+        Dfs
+    };
+
     struct AnimationStep
     {
         StepType type {StepType::None};
@@ -81,18 +93,27 @@ private:
     QVector<PathEdge> activeEdges;
     QVector<PathEdge> backtrackedEdges;
     QVector<AnimationStep> searchSteps;
+    AlgorithmType activeAlgorithm {AlgorithmType::None};
     QColor nodeColor {"#22D3EE"};
     QColor backgroundColor {"#111827"};
+    QString statusText;
+    QString resultText;
+    QString pendingResultText;
     int sourceNode {0};
     int targetNode {7};
     bool weightedGraph {true};
+    bool statusOverlayVisible {true};
 
     QTimer searchTimer;
     AnimationStep currentStep;
     int searchStepIndex {0};
 
     QPointF randomNodePosition() const;
+    QString algorithmName() const;
+    QString formatPath(const QVector<int> &path) const;
+    QString stepDescription(const AnimationStep &step) const;
     void clearSearchState();
+    void drawStatusOverlay(QPainter &painter) const;
     bool isHighlightedEdge(const Edge &edge, const PathEdge &pathEdge) const;
 };
 

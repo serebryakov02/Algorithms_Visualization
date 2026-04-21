@@ -3,6 +3,7 @@
 #include <QLinearGradient>
 #include <QPainter>
 #include <QRandomGenerator>
+#include <QStringList>
 #include <functional>
 
 namespace {
@@ -88,6 +89,12 @@ void GraphWidget::setWeightedGraph(bool weighted)
     update();
 }
 
+void GraphWidget::setStatusOverlayVisible(bool visible)
+{
+    statusOverlayVisible = visible;
+    update();
+}
+
 void GraphWidget::shuffleNodes()
 {
     clearSearchState();
@@ -152,6 +159,8 @@ void GraphWidget::connectNodes()
 void GraphWidget::runDijkstra()
 {
     clearSearchState();
+    activeAlgorithm = AlgorithmType::Dijkstra;
+    statusText = "Preparing Dijkstra";
 
     if (nodes.isEmpty()) {
         update();
@@ -213,15 +222,21 @@ void GraphWidget::runDijkstra()
     }
 
     if (distances[target] != InfiniteDistance) {
-        QVector<PathEdge> path;
+        QVector<int> path;
 
-        for (int node = target; previous[node] != -1; node = previous[node]) {
-            path.prepend({previous[node], node});
+        for (int node = target; node != -1; node = previous[node]) {
+            path.prepend(node);
         }
 
-        for (const auto &edge : path) {
-            searchSteps.push_back({StepType::ShowPath, -1, edge.from, edge.to, 0});
+        pendingResultText = QString("Shortest path: %1\nDistance: %2")
+                                .arg(formatPath(path))
+                                .arg(distances[target]);
+
+        for (int i = 1; i < path.size(); ++i) {
+            searchSteps.push_back({StepType::ShowPath, -1, path.at(i - 1), path.at(i), 0});
         }
+    } else {
+        pendingResultText = "No path found";
     }
 
     showNextSearchStep();
@@ -231,6 +246,8 @@ void GraphWidget::runDijkstra()
 void GraphWidget::runBfs()
 {
     clearSearchState();
+    activeAlgorithm = AlgorithmType::Bfs;
+    statusText = "Preparing BFS";
 
     if (nodes.isEmpty()) {
         update();
@@ -285,15 +302,21 @@ void GraphWidget::runBfs()
     }
 
     if (distances[targetNode] != InfiniteDistance) {
-        QVector<PathEdge> path;
+        QVector<int> path;
 
-        for (int node = targetNode; previous[node] != -1; node = previous[node]) {
-            path.prepend({previous[node], node});
+        for (int node = targetNode; node != -1; node = previous[node]) {
+            path.prepend(node);
         }
 
-        for (const auto &edge : path) {
-            searchSteps.push_back({StepType::ShowPath, -1, edge.from, edge.to, 0});
+        pendingResultText = QString("Shortest path: %1\nEdges: %2")
+                                .arg(formatPath(path))
+                                .arg(distances[targetNode]);
+
+        for (int i = 1; i < path.size(); ++i) {
+            searchSteps.push_back({StepType::ShowPath, -1, path.at(i - 1), path.at(i), 0});
         }
+    } else {
+        pendingResultText = "No path found";
     }
 
     showNextSearchStep();
@@ -303,6 +326,8 @@ void GraphWidget::runBfs()
 void GraphWidget::runDfs()
 {
     clearSearchState();
+    activeAlgorithm = AlgorithmType::Dfs;
+    statusText = "Preparing DFS";
 
     if (nodes.isEmpty()) {
         update();
@@ -316,12 +341,16 @@ void GraphWidget::runDfs()
     }
 
     QVector<bool> visited(nodes.size(), false);
+    QVector<int> currentPath;
+    QVector<int> foundPath;
 
     std::function<bool(int)> dfs = [&](int node) {
         visited[node] = true;
+        currentPath.push_back(node);
         searchSteps.push_back({StepType::DfsVisit, node, -1, -1, 0});
 
         if (node == targetNode) {
+            foundPath = currentPath;
             return true;
         }
 
@@ -340,10 +369,15 @@ void GraphWidget::runDfs()
         }
 
         searchSteps.push_back({StepType::DfsFinish, node, -1, -1, 0});
+        currentPath.removeLast();
         return false;
     };
 
-    dfs(sourceNode);
+    if (dfs(sourceNode)) {
+        pendingResultText = QString("Path found: %1").arg(formatPath(foundPath));
+    } else {
+        pendingResultText = "No path found";
+    }
 
     showNextSearchStep();
     searchTimer.start();
@@ -354,12 +388,19 @@ void GraphWidget::showNextSearchStep()
     if (searchStepIndex >= searchSteps.size()) {
         searchTimer.stop();
         currentStep = {};
+        statusText = activeAlgorithm == AlgorithmType::None ? QString() : "Finished";
+
+        if (!pendingResultText.isEmpty()) {
+            resultText = pendingResultText;
+        }
+
         update();
         return;
     }
 
     currentStep = searchSteps.at(searchStepIndex);
     ++searchStepIndex;
+    statusText = stepDescription(currentStep);
 
     if (currentStep.type == StepType::UpdateDistance) {
         visibleDistances[currentStep.node] = currentStep.distance;
@@ -386,6 +427,10 @@ void GraphWidget::showNextSearchStep()
     } else if (currentStep.type == StepType::DfsFinish) {
         finalizedNodes[currentStep.node] = true;
         activeNodes[currentStep.node] = false;
+    }
+
+    if (currentStep.type == StepType::ShowPath && !pendingResultText.isEmpty()) {
+        resultText = pendingResultText;
     }
 
     update();
@@ -511,6 +556,8 @@ void GraphWidget::paintEvent(QPaintEvent *event)
                              QString("d=%1").arg(visibleDistances.at(i)));
         }
     }
+
+    drawStatusOverlay(painter);
 }
 
 QPointF GraphWidget::randomNodePosition() const
@@ -520,6 +567,85 @@ QPointF GraphWidget::randomNodePosition() const
     return QPointF(x, y);
 }
 
+QString GraphWidget::algorithmName() const
+{
+    switch (activeAlgorithm) {
+    case AlgorithmType::Dijkstra:
+        return "Dijkstra";
+    case AlgorithmType::Bfs:
+        return "BFS";
+    case AlgorithmType::Dfs:
+        return "DFS";
+    case AlgorithmType::None:
+        return {};
+    }
+
+    return {};
+}
+
+QString GraphWidget::formatPath(const QVector<int> &path) const
+{
+    QString text;
+
+    for (int i = 0; i < path.size(); ++i) {
+        if (i > 0) {
+            text += " -> ";
+        }
+
+        text += QString::number(path.at(i) + 1);
+    }
+
+    return text;
+}
+
+QString GraphWidget::stepDescription(const AnimationStep &step) const
+{
+    const auto nodeLabel = [](int node) {
+        return QString::number(node + 1);
+    };
+
+    switch (step.type) {
+    case StepType::SelectCurrent:
+        return QString("Current: select node %1").arg(nodeLabel(step.node));
+    case StepType::CheckNeighbor:
+        return QString("Current: check edge %1 -> %2")
+            .arg(nodeLabel(step.from), nodeLabel(step.to));
+    case StepType::UpdateDistance:
+        if (step.from == -1) {
+            return QString("Current: start at node %1").arg(nodeLabel(step.node));
+        }
+
+        if (activeAlgorithm == AlgorithmType::Bfs) {
+            return QString("Current: discover node %1 at level %2")
+                .arg(nodeLabel(step.node))
+                .arg(step.distance);
+        }
+
+        return QString("Current: update node %1 to distance %2")
+            .arg(nodeLabel(step.node))
+            .arg(step.distance);
+    case StepType::FinalizeNode:
+        return QString("Current: finish node %1").arg(nodeLabel(step.node));
+    case StepType::ShowPath:
+        return QString("Current: draw path edge %1 -> %2")
+            .arg(nodeLabel(step.from), nodeLabel(step.to));
+    case StepType::DfsVisit:
+        return QString("Current: visit node %1").arg(nodeLabel(step.node));
+    case StepType::DfsAdvance:
+        return QString("Current: follow edge %1 -> %2")
+            .arg(nodeLabel(step.from), nodeLabel(step.to));
+    case StepType::DfsBacktrack:
+        return QString("Current: backtrack from %1 to %2")
+            .arg(nodeLabel(step.to), nodeLabel(step.from));
+    case StepType::DfsFinish:
+        return QString("Current: finish node %1").arg(nodeLabel(step.node));
+    case StepType::None:
+        return {};
+    }
+
+    return {};
+}
+
 void GraphWidget::clearSearchState()
 {
     searchTimer.stop();
@@ -527,12 +653,78 @@ void GraphWidget::clearSearchState()
     shortestPath.clear();
     activeEdges.clear();
     backtrackedEdges.clear();
+    activeAlgorithm = AlgorithmType::None;
+    statusText.clear();
+    resultText.clear();
+    pendingResultText.clear();
     searchStepIndex = 0;
     currentStep = {};
 
     visibleDistances = QVector<int>(nodes.size(), InfiniteDistance);
     finalizedNodes = QVector<bool>(nodes.size(), false);
     activeNodes = QVector<bool>(nodes.size(), false);
+}
+
+void GraphWidget::drawStatusOverlay(QPainter &painter) const
+{
+    if (!statusOverlayVisible) {
+        return;
+    }
+
+    QStringList lines;
+    const QString name = algorithmName();
+
+    if (!name.isEmpty()) {
+        lines.push_back(name);
+    }
+
+    if (!statusText.isEmpty()) {
+        lines.push_back(statusText);
+    }
+
+    if (!resultText.isEmpty()) {
+        lines.append(resultText.split('\n'));
+    }
+
+    if (lines.isEmpty()) {
+        return;
+    }
+
+    painter.save();
+
+    QFont font = painter.font();
+    font.setPointSize(12);
+    painter.setFont(font);
+
+    const QFontMetrics metrics(font);
+    constexpr int margin = 16;
+    constexpr int padding = 12;
+    const int textWidth = qMin(360, width() - margin * 2 - padding * 2);
+    int textHeight = 0;
+
+    for (const auto &line : lines) {
+        const QRect textRect = metrics.boundingRect(QRect(0, 0, textWidth, 1000),
+                                                    Qt::TextWordWrap, line);
+        textHeight += textRect.height() + 4;
+    }
+
+    QRectF panel(margin, margin, textWidth + padding * 2, textHeight + padding * 2);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(15, 23, 42, 210));
+    painter.drawRoundedRect(panel, 6, 6);
+
+    painter.setPen(QColor("#F8FAFC"));
+    int y = panel.top() + padding;
+
+    for (const auto &line : lines) {
+        const QRect textRect = metrics.boundingRect(QRect(0, 0, textWidth, 1000),
+                                                    Qt::TextWordWrap, line);
+        painter.drawText(QRectF(panel.left() + padding, y, textWidth, textRect.height()),
+                         Qt::TextWordWrap, line);
+        y += textRect.height() + 4;
+    }
+
+    painter.restore();
 }
 
 bool GraphWidget::isHighlightedEdge(const Edge &edge, const PathEdge &pathEdge) const

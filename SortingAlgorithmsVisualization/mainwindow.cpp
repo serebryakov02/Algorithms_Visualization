@@ -82,6 +82,8 @@ void MainWindow::initGui()
 
     auto weightedCheckBox = new QCheckBox("Weighted graph");
     weightedCheckBox->setChecked(true);
+    auto showStatusCheckBox = new QCheckBox("Show algorithm status");
+    showStatusCheckBox->setChecked(true);
 
     auto shuffleButton = new QPushButton("Shuffle");
     auto connectButton = new QPushButton("Connect");
@@ -99,6 +101,7 @@ void MainWindow::initGui()
     auto graphSetupLayout = new QVBoxLayout;
     graphSetupLayout->addLayout(nodesLayout);
     graphSetupLayout->addWidget(weightedCheckBox);
+    graphSetupLayout->addWidget(showStatusCheckBox);
     graphSetupLayout->addWidget(shuffleButton);
     graphSetupLayout->addWidget(connectButton);
     graphSetupGroup->setLayout(graphSetupLayout);
@@ -209,6 +212,8 @@ void MainWindow::initGui()
         bfsButton->setEnabled(!weighted);
         dfsButton->setEnabled(!weighted);
     });
+    connect(showStatusCheckBox, &QCheckBox::toggled,
+            graphWidget, &GraphWidget::setStatusOverlayVisible);
     connect(shuffleButton, &QPushButton::clicked, graphWidget, &GraphWidget::shuffleNodes);
     connect(connectButton, &QPushButton::clicked, graphWidget, &GraphWidget::connectNodes);
     connect(dijkstraButton, &QPushButton::clicked, graphWidget, &GraphWidget::runDijkstra);
