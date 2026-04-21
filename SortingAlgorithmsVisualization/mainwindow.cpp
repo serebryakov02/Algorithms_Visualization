@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "graphwidget.h"
 #include "ui_mainwindow.h"
 #include <QtWidgets>
 
@@ -57,7 +58,54 @@ void MainWindow::initGui()
 
     ui->mainWidget->setLayout(hLayout);
 
-    setCentralWidget(ui->mainWidget);
+    auto graphWidget = new GraphWidget;
+
+    auto graphGroup = new QGroupBox("Graph");
+    graphGroup->setAlignment(Qt::AlignHCenter);
+
+    auto graphLayout = new QVBoxLayout;
+    graphLayout->addWidget(graphWidget);
+    graphGroup->setLayout(graphLayout);
+
+    auto graphSettingsGroup = new QGroupBox("Settings");
+    graphSettingsGroup->setAlignment(Qt::AlignHCenter);
+
+    auto nodesLabel = new QLabel("Vertices");
+    auto nodesSpinBox = new QSpinBox;
+    nodesSpinBox->setMinimum(2);
+    nodesSpinBox->setMaximum(30);
+    nodesSpinBox->setValue(graphWidget->nodeCount());
+
+    auto nodesLayout = new QHBoxLayout;
+    nodesLayout->addWidget(nodesLabel);
+    nodesLayout->addWidget(nodesSpinBox);
+
+    auto shuffleButton = new QPushButton("Shuffle");
+    auto connectButton = new QPushButton("Connect");
+
+    auto graphSettingsLayout = new QVBoxLayout;
+    graphSettingsLayout->addLayout(nodesLayout);
+    graphSettingsLayout->addWidget(shuffleButton);
+    graphSettingsLayout->addWidget(connectButton);
+    graphSettingsLayout->addStretch();
+    graphSettingsGroup->setLayout(graphSettingsLayout);
+
+    connect(nodesSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            graphWidget, &GraphWidget::setNodeCount);
+    connect(shuffleButton, &QPushButton::clicked, graphWidget, &GraphWidget::shuffleNodes);
+    connect(connectButton, &QPushButton::clicked, graphWidget, &GraphWidget::connectNodes);
+
+    auto graphTab = new QWidget;
+    auto graphTabLayout = new QHBoxLayout;
+    graphTabLayout->addWidget(graphGroup);
+    graphTabLayout->addWidget(graphSettingsGroup);
+    graphTab->setLayout(graphTabLayout);
+
+    auto tabWidget = new QTabWidget;
+    tabWidget->addTab(ui->mainWidget, "Sorting Algorithms");
+    tabWidget->addTab(graphTab, "Graph Visualizer");
+
+    setCentralWidget(tabWidget);
 }
 
 void MainWindow::on_horizontalSliderSize_valueChanged(int value)
