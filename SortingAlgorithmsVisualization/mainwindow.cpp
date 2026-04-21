@@ -18,7 +18,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::initGui()
 {
-    setWindowTitle("Sorting Algorithms Visualization");
+    setWindowTitle("Algorithms Visualization");
 
     setFixedSize(1280, 768);
 
