@@ -39,6 +39,9 @@ void GraphWidget::setNodeCount(int count)
         nodes.push_back(randomNodePosition());
     }
 
+    sourceNode = qBound(0, sourceNode, nodes.size() - 1);
+    targetNode = qBound(0, targetNode, nodes.size() - 1);
+
     clearDijkstraState();
     update();
 }
@@ -60,6 +63,20 @@ void GraphWidget::setBackgroundColor(const QColor &color)
     }
 
     backgroundColor = color;
+    update();
+}
+
+void GraphWidget::setSourceNode(int node)
+{
+    sourceNode = qBound(0, node - 1, nodes.size() - 1);
+    clearDijkstraState();
+    update();
+}
+
+void GraphWidget::setTargetNode(int node)
+{
+    targetNode = qBound(0, node - 1, nodes.size() - 1);
+    clearDijkstraState();
     update();
 }
 
@@ -133,8 +150,8 @@ void GraphWidget::runDijkstra()
         return;
     }
 
-    const int source = 0;
-    const int target = nodes.size() - 1;
+    const int source = sourceNode;
+    const int target = targetNode;
 
     QVector<int> distances(nodes.size(), InfiniteDistance);
     QVector<int> previous(nodes.size(), -1);

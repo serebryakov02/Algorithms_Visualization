@@ -96,6 +96,24 @@ void MainWindow::initGui()
     auto graphAlgorithmsGroup = new QGroupBox("Pathfinding Algorithms");
     graphAlgorithmsGroup->setAlignment(Qt::AlignCenter);
 
+    auto sourceLabel = new QLabel("From");
+    auto sourceSpinBox = new QSpinBox;
+    sourceSpinBox->setMinimum(1);
+    sourceSpinBox->setMaximum(graphWidget->nodeCount());
+    sourceSpinBox->setValue(1);
+
+    auto targetLabel = new QLabel("To");
+    auto targetSpinBox = new QSpinBox;
+    targetSpinBox->setMinimum(1);
+    targetSpinBox->setMaximum(graphWidget->nodeCount());
+    targetSpinBox->setValue(graphWidget->nodeCount());
+
+    auto pathNodesLayout = new QHBoxLayout;
+    pathNodesLayout->addWidget(sourceLabel);
+    pathNodesLayout->addWidget(sourceSpinBox);
+    pathNodesLayout->addWidget(targetLabel);
+    pathNodesLayout->addWidget(targetSpinBox);
+
     auto graphAlgorithmHeaderLayout = new QHBoxLayout;
     auto graphAlgorithmHeader = new QLabel("Algorithm");
     auto graphComplexityHeader = new QLabel("Worst case");
@@ -111,6 +129,7 @@ void MainWindow::initGui()
     graphAlgorithmLayout->addWidget(dijkstraComplexityLabel);
 
     auto graphAlgorithmsLayout = new QVBoxLayout;
+    graphAlgorithmsLayout->addLayout(pathNodesLayout);
     graphAlgorithmsLayout->addLayout(graphAlgorithmHeaderLayout);
     graphAlgorithmsLayout->addLayout(graphAlgorithmLayout);
     graphAlgorithmsGroup->setLayout(graphAlgorithmsLayout);
@@ -142,7 +161,23 @@ void MainWindow::initGui()
     graphSettingsGroup->setLayout(graphSettingsLayout);
 
     connect(nodesSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
-            graphWidget, &GraphWidget::setNodeCount);
+            this, [graphWidget, sourceSpinBox, targetSpinBox](int value) {
+        graphWidget->setNodeCount(value);
+        sourceSpinBox->setMaximum(value);
+        targetSpinBox->setMaximum(value);
+
+        if (sourceSpinBox->value() > value) {
+            sourceSpinBox->setValue(value);
+        }
+
+        if (targetSpinBox->value() > value) {
+            targetSpinBox->setValue(value);
+        }
+    });
+    connect(sourceSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            graphWidget, &GraphWidget::setSourceNode);
+    connect(targetSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            graphWidget, &GraphWidget::setTargetNode);
     connect(shuffleButton, &QPushButton::clicked, graphWidget, &GraphWidget::shuffleNodes);
     connect(connectButton, &QPushButton::clicked, graphWidget, &GraphWidget::connectNodes);
     connect(dijkstraButton, &QPushButton::clicked, graphWidget, &GraphWidget::runDijkstra);

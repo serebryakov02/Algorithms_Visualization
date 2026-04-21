@@ -18,6 +18,8 @@ public:
     void setNodeCount(int count);
     void setNodeColor(const QColor &color);
     void setBackgroundColor(const QColor &color);
+    void setSourceNode(int node);
+    void setTargetNode(int node);
 
 public slots:
     void shuffleNodes();
@@ -71,6 +73,8 @@ private:
     QVector<AnimationStep> dijkstraSteps;
     QColor nodeColor {"#22D3EE"};
     QColor backgroundColor {"#111827"};
+    int sourceNode {0};
+    int targetNode {7};
 
     QTimer dijkstraTimer;
     AnimationStep currentStep;
