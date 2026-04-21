@@ -18,7 +18,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::initGui()
 {
-    setWindowTitle("Sorting Algorithms Visualization");
+    setWindowTitle("Algorithms Visualization");
 
     setFixedSize(1280, 768);
 
@@ -31,19 +31,29 @@ void MainWindow::initGui()
     ui->spinBoxSize->setMinimum(2);
     ui->spinBoxSize->setMaximum(100);
 
-    auto hLayout = new QHBoxLayout;
-    hLayout->addWidget(widgetBars);
+    auto visualizationGroup = new QGroupBox("Visualization");
+    visualizationGroup->setAlignment(Qt::AlignHCenter);
 
-    auto vLayout = new QVBoxLayout;
-    vLayout->addWidget(ui->widgetSettings);
-    vLayout->addWidget(ui->widgetStyling);
+    auto visualizationLayout = new QVBoxLayout;
+    visualizationLayout->addWidget(widgetBars);
+    visualizationGroup->setLayout(visualizationLayout);
+
+    auto settingsGroup = new QGroupBox("Settings");
+    settingsGroup->setAlignment(Qt::AlignHCenter);
+
+    auto settingsLayout = new QVBoxLayout;
+    settingsLayout->addWidget(ui->widgetSettings);
+    settingsLayout->addWidget(ui->widgetStyling);
 
     // Create a vertical spacer
     auto vSpacer = new QSpacerItem(20, 40,
                                    QSizePolicy::Minimum, QSizePolicy::Expanding);
-    vLayout->addSpacerItem(vSpacer);
+    settingsLayout->addSpacerItem(vSpacer);
+    settingsGroup->setLayout(settingsLayout);
 
-    hLayout->addLayout(vLayout);
+    auto hLayout = new QHBoxLayout;
+    hLayout->addWidget(visualizationGroup);
+    hLayout->addWidget(settingsGroup);
 
     ui->mainWidget->setLayout(hLayout);
 
@@ -62,6 +72,8 @@ void MainWindow::on_spinBox_valueChanged(int value)
 
 void MainWindow::specialSlot(int value)
 {
+    widgetBars->stopSorting();
+
     widgetBars->getBars().clear();
 
     widgetBars->setSize(value);

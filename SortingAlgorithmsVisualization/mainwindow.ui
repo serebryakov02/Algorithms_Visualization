@@ -39,7 +39,7 @@
        <item>
         <widget class="QLabel" name="label">
          <property name="text">
-          <string>Size</string>
+          <string>Bars</string>
          </property>
         </widget>
        </item>
@@ -89,7 +89,7 @@
              </font>
             </property>
             <property name="text">
-             <string>Complexity</string>
+             <string>Worst case</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -113,7 +113,7 @@
           <item>
            <widget class="QLabel" name="label_4">
             <property name="text">
-             <string>O(N^2)</string>
+             <string>O(n^2)</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -134,7 +134,7 @@
           <item>
            <widget class="QLabel" name="label_5">
             <property name="text">
-             <string>O(N^2)</string>
+             <string>O(n^2)</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -155,7 +155,7 @@
           <item>
            <widget class="QLabel" name="label_6">
             <property name="text">
-             <string>O(N^2)</string>
+             <string>O(n^2)</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -176,7 +176,7 @@
           <item>
            <widget class="QLabel" name="label_7">
             <property name="text">
-             <string>O(N^2)</string>
+             <string>O(n^2)</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -197,7 +197,7 @@
           <item>
            <widget class="QLabel" name="label_10">
             <property name="text">
-             <string>O(N^2)</string>
+             <string>O(n^2)</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -218,7 +218,7 @@
           <item>
            <widget class="QLabel" name="label_11">
             <property name="text">
-             <string>O(N^2)</string>
+             <string>O(n^2)</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -245,7 +245,7 @@
      <item>
       <widget class="QGroupBox" name="groupBox_2">
        <property name="title">
-        <string>Styling</string>
+        <string>Appearance</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
@@ -256,14 +256,14 @@
           <item>
            <widget class="QLabel" name="label_2">
             <property name="text">
-             <string>Bars Color</string>
+             <string>Bar color</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="btnChooseFillColor">
             <property name="text">
-             <string>Choose</string>
+             <string>Choose...</string>
             </property>
            </widget>
           </item>
@@ -274,14 +274,14 @@
           <item>
            <widget class="QLabel" name="label_3">
             <property name="text">
-             <string>Background Color</string>
+             <string>Background color</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="btnChooseBackgroundColor">
             <property name="text">
-             <string>Choose</string>
+             <string>Choose...</string>
             </property>
            </widget>
           </item>
