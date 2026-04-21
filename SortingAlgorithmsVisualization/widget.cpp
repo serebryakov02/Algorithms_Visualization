@@ -2,6 +2,7 @@
 #include "ui_widget.h"
 #include <QPainter>
 #include <QLinearGradient>
+#include <QPen>
 #include <algorithm> // swap() C++11
 #include <QTimer>
 #include <QElapsedTimer>
@@ -145,12 +146,15 @@ void Widget::paintEvent(QPaintEvent *event)
     const QColor barBase = selectedColor.isValid()
                                ? selectedColor
                                : QColor("#22D3EE");
+    const QColor barOutline = barBase.darker(140);
     QBrush barBrush(barBase);
+    painter.setPen(QPen(barOutline, 1));
 
     size_t offset = 0;
     for (size_t i {0}; i < size; ++i) {
         const QRect barRect(offset, height() - bars.at(i), width() / size, bars.at(i));
         painter.fillRect(barRect, barBrush);
+        painter.drawRect(barRect.adjusted(0, 0, -1, -1));
         offset += width() / size ;
     }
 
