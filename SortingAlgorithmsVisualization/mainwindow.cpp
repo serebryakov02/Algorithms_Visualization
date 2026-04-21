@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "binarysearchwidget.h"
 #include "graphwidget.h"
 #include "ui_mainwindow.h"
 #include <QtWidgets>
@@ -234,9 +235,153 @@ void MainWindow::initGui()
     graphTabLayout->addWidget(graphSettingsGroup);
     graphTab->setLayout(graphTabLayout);
 
+    auto binarySearchWidget = new BinarySearchWidget;
+
+    auto searchGroup = new QGroupBox("Binary Search");
+    searchGroup->setAlignment(Qt::AlignHCenter);
+
+    auto searchLayout = new QVBoxLayout;
+    searchLayout->addWidget(binarySearchWidget);
+    searchGroup->setLayout(searchLayout);
+
+    auto searchSettingsGroup = new QGroupBox("Settings");
+    searchSettingsGroup->setAlignment(Qt::AlignHCenter);
+
+    auto elementCountLabel = new QLabel("Elements");
+    auto elementCountSlider = new QSlider(Qt::Horizontal);
+    elementCountSlider->setMinimum(2);
+    elementCountSlider->setMaximum(100);
+    auto elementCountSpinBox = new QSpinBox;
+    elementCountSpinBox->setMinimum(2);
+    elementCountSpinBox->setMaximum(100);
+    elementCountSpinBox->setValue(binarySearchWidget->valueCount());
+    elementCountSlider->setValue(binarySearchWidget->valueCount());
+
+    auto elementCountLayout = new QHBoxLayout;
+    elementCountLayout->addWidget(elementCountLabel);
+    elementCountLayout->addWidget(elementCountSlider);
+    elementCountLayout->addWidget(elementCountSpinBox);
+
+    auto targetValueLabel = new QLabel("Target");
+    auto targetValueSpinBox = new QSpinBox;
+    targetValueSpinBox->setMinimum(binarySearchWidget->minimumValue());
+    targetValueSpinBox->setMaximum(binarySearchWidget->maximumValue());
+    targetValueSpinBox->setValue(binarySearchWidget->targetValue());
+
+    auto targetValueLayout = new QHBoxLayout;
+    targetValueLayout->addWidget(targetValueLabel);
+    targetValueLayout->addWidget(targetValueSpinBox);
+
+    auto pickExistingTargetButton = new QPushButton("Pick Existing");
+    auto generateArrayButton = new QPushButton("Generate Sorted Array");
+
+    auto searchSetupGroup = new QGroupBox("Search Setup");
+    searchSetupGroup->setAlignment(Qt::AlignCenter);
+
+    auto searchSetupLayout = new QVBoxLayout;
+    searchSetupLayout->addLayout(elementCountLayout);
+    searchSetupLayout->addLayout(targetValueLayout);
+    searchSetupLayout->addWidget(pickExistingTargetButton);
+    searchSetupLayout->addWidget(generateArrayButton);
+    searchSetupGroup->setLayout(searchSetupLayout);
+
+    auto searchAlgorithmsGroup = new QGroupBox("Search Algorithms");
+    searchAlgorithmsGroup->setAlignment(Qt::AlignCenter);
+
+    auto runBinarySearchButton = new QPushButton("Run Binary Search");
+    auto searchAlgorithmHeader = new QLabel("Algorithm");
+    auto searchComplexityHeader = new QLabel("Worst case");
+    searchAlgorithmHeader->setAlignment(Qt::AlignCenter);
+    searchComplexityHeader->setAlignment(Qt::AlignCenter);
+
+    auto searchHeaderLayout = new QHBoxLayout;
+    searchHeaderLayout->addWidget(searchAlgorithmHeader);
+    searchHeaderLayout->addWidget(searchComplexityHeader);
+
+    auto binarySearchLayout = new QHBoxLayout;
+    auto binarySearchComplexityLabel = new QLabel("O(log n)");
+    binarySearchComplexityLabel->setAlignment(Qt::AlignCenter);
+    binarySearchLayout->addWidget(runBinarySearchButton);
+    binarySearchLayout->addWidget(binarySearchComplexityLabel);
+
+    auto searchAlgorithmsLayout = new QVBoxLayout;
+    searchAlgorithmsLayout->addLayout(searchHeaderLayout);
+    searchAlgorithmsLayout->addLayout(binarySearchLayout);
+    searchAlgorithmsGroup->setLayout(searchAlgorithmsLayout);
+
+    auto searchAppearanceGroup = new QGroupBox("Appearance");
+    searchAppearanceGroup->setAlignment(Qt::AlignCenter);
+
+    auto searchBarColorButton = new QPushButton("Choose...");
+    auto searchBackgroundButton = new QPushButton("Choose...");
+
+    auto searchBarColorLayout = new QHBoxLayout;
+    searchBarColorLayout->addWidget(new QLabel("Bar color"));
+    searchBarColorLayout->addWidget(searchBarColorButton);
+
+    auto searchBackgroundLayout = new QHBoxLayout;
+    searchBackgroundLayout->addWidget(new QLabel("Background color"));
+    searchBackgroundLayout->addWidget(searchBackgroundButton);
+
+    auto searchAppearanceLayout = new QVBoxLayout;
+    searchAppearanceLayout->addLayout(searchBarColorLayout);
+    searchAppearanceLayout->addLayout(searchBackgroundLayout);
+    searchAppearanceGroup->setLayout(searchAppearanceLayout);
+
+    auto searchSettingsLayout = new QVBoxLayout;
+    searchSettingsLayout->addWidget(searchSetupGroup);
+    searchSettingsLayout->addWidget(searchAlgorithmsGroup);
+    searchSettingsLayout->addWidget(searchAppearanceGroup);
+    searchSettingsLayout->addStretch();
+    searchSettingsGroup->setLayout(searchSettingsLayout);
+
+    connect(binarySearchWidget, &BinarySearchWidget::valuesGenerated, this,
+            [binarySearchWidget, targetValueSpinBox](int minimum, int maximum, int suggestedTarget) {
+        targetValueSpinBox->blockSignals(true);
+        targetValueSpinBox->setRange(minimum, maximum);
+        targetValueSpinBox->setValue(suggestedTarget);
+        targetValueSpinBox->blockSignals(false);
+        binarySearchWidget->setTargetValue(targetValueSpinBox->value());
+    });
+    connect(elementCountSlider, &QSlider::valueChanged,
+            elementCountSpinBox, &QSpinBox::setValue);
+    connect(elementCountSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [binarySearchWidget, elementCountSlider](int value) {
+        elementCountSlider->blockSignals(true);
+        elementCountSlider->setValue(value);
+        elementCountSlider->blockSignals(false);
+        binarySearchWidget->setValueCount(value);
+    });
+    connect(targetValueSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            binarySearchWidget, &BinarySearchWidget::setTargetValue);
+    connect(pickExistingTargetButton, &QPushButton::clicked, this,
+            [binarySearchWidget, targetValueSpinBox]() {
+        targetValueSpinBox->setValue(binarySearchWidget->randomExistingValue());
+    });
+    connect(generateArrayButton, &QPushButton::clicked,
+            binarySearchWidget, &BinarySearchWidget::generateValues);
+    connect(runBinarySearchButton, &QPushButton::clicked,
+            binarySearchWidget, &BinarySearchWidget::runBinarySearch);
+    connect(searchBarColorButton, &QPushButton::clicked, this, [this, binarySearchWidget]() {
+        const QColor color = QColorDialog::getColor(Qt::cyan, this, "Select Color");
+        binarySearchWidget->setBarColor(color);
+    });
+    connect(searchBackgroundButton, &QPushButton::clicked, this,
+            [this, binarySearchWidget]() {
+        const QColor color = QColorDialog::getColor(Qt::black, this, "Select Color");
+        binarySearchWidget->setBackgroundColor(color);
+    });
+
+    auto searchTab = new QWidget;
+    auto searchTabLayout = new QHBoxLayout;
+    searchTabLayout->addWidget(searchGroup);
+    searchTabLayout->addWidget(searchSettingsGroup);
+    searchTab->setLayout(searchTabLayout);
+
     auto tabWidget = new QTabWidget;
     tabWidget->addTab(ui->mainWidget, "Sorting Algorithms");
     tabWidget->addTab(graphTab, "Graph Visualizer");
+    tabWidget->addTab(searchTab, "Search Algorithms");
 
     setCentralWidget(tabWidget);
 }
