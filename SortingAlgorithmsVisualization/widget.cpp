@@ -1,6 +1,7 @@
 #include "widget.h"
 #include "ui_widget.h"
 #include <QPainter>
+#include <QLinearGradient>
 #include <algorithm> // swap() C++11
 #include <QTimer>
 #include <QElapsedTimer>
@@ -130,25 +131,27 @@ void Widget::paintEvent(QPaintEvent *event)
     QPainter painter(this);
 
     painter.save();
+    painter.setPen(Qt::NoPen);
 
-    if (!selectedColor.isValid()) {
-        QBrush brush(Qt::cyan);
-        painter.setBrush(brush);
+    const QColor backgroundBase = backgroundColor.isValid()
+                                      ? backgroundColor
+                                      : QColor("#111827");
 
-        size_t offset = 0;
-        for (size_t i {0}; i < size; ++i) {
-            painter.drawRect(offset, height() - bars.at(i), width() / size, bars.at(i));
-            offset += width() / size ;
-        }
-    } else {
-        QBrush brush(selectedColor);
-        painter.setBrush(brush);
+    QLinearGradient backgroundGradient(0, 0, 0, height());
+    backgroundGradient.setColorAt(0.0, backgroundBase.lighter(125));
+    backgroundGradient.setColorAt(1.0, backgroundBase.darker(140));
+    painter.fillRect(rect(), backgroundGradient);
 
-        size_t offset = 0;
-        for (size_t i {0}; i < size; ++i) {
-            painter.drawRect(offset, height() - bars.at(i), width() / size, bars.at(i));
-            offset += width() / size ;
-        }
+    const QColor barBase = selectedColor.isValid()
+                               ? selectedColor
+                               : QColor("#22D3EE");
+    QBrush barBrush(barBase);
+
+    size_t offset = 0;
+    for (size_t i {0}; i < size; ++i) {
+        const QRect barRect(offset, height() - bars.at(i), width() / size, bars.at(i));
+        painter.fillRect(barRect, barBrush);
+        offset += width() / size ;
     }
 
     painter.restore();
