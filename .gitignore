@@ -52,3 +52,14 @@ compile_commands.json
 *creator.user*
 
 *_qmlcache.qrc
+
+# CMake
+/build/
+/CMakeFiles/
+/CMakeCache.txt
+/cmake_install.cmake
+/Testing/
+cmake-build-*/
+
+# macOS
+.DS_Store
