@@ -106,6 +106,25 @@ void Widget::activateOddEvenSort()
     oddEvenSort();
 }
 
+void Widget::stopSorting()
+{
+    timer.stop();
+
+    bubbleSortPressed = false;
+    selectionSortPressed = false;
+    insertionSortPressed = false;
+    gnomeSortPressed = false;
+    cocktailSortPressed = false;
+    oddEvenSortPressed = false;
+
+    i = 0;
+    j = 0;
+    start = 0;
+    end = 0;
+    swapped = false;
+    isSorted = false;
+}
+
 void Widget::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
@@ -342,6 +361,8 @@ void Widget::performSortStep()
 
 void Widget::on_horizontalSlider_valueChanged(int value)
 {
+    stopSorting();
+
     bars.clear();
 
     size = value;

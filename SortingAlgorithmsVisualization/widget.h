@@ -34,6 +34,8 @@ public:
     void oddEvenSort();
     void activateOddEvenSort();
 
+    void stopSorting();
+
     size_t getSize() const;
 
     void setSize(size_t newSize);

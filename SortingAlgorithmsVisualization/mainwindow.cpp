@@ -62,6 +62,8 @@ void MainWindow::on_spinBox_valueChanged(int value)
 
 void MainWindow::specialSlot(int value)
 {
+    widgetBars->stopSorting();
+
     widgetBars->getBars().clear();
 
     widgetBars->setSize(value);
