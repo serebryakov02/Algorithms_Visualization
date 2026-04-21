@@ -82,11 +82,62 @@ void MainWindow::initGui()
 
     auto shuffleButton = new QPushButton("Shuffle");
     auto connectButton = new QPushButton("Connect");
+    auto dijkstraButton = new QPushButton("Run Dijkstra");
+
+    auto graphSetupGroup = new QGroupBox("Graph Setup");
+    graphSetupGroup->setAlignment(Qt::AlignCenter);
+
+    auto graphSetupLayout = new QVBoxLayout;
+    graphSetupLayout->addLayout(nodesLayout);
+    graphSetupLayout->addWidget(shuffleButton);
+    graphSetupLayout->addWidget(connectButton);
+    graphSetupGroup->setLayout(graphSetupLayout);
+
+    auto graphAlgorithmsGroup = new QGroupBox("Pathfinding Algorithms");
+    graphAlgorithmsGroup->setAlignment(Qt::AlignCenter);
+
+    auto graphAlgorithmHeaderLayout = new QHBoxLayout;
+    auto graphAlgorithmHeader = new QLabel("Algorithm");
+    auto graphComplexityHeader = new QLabel("Worst case");
+    graphAlgorithmHeader->setAlignment(Qt::AlignCenter);
+    graphComplexityHeader->setAlignment(Qt::AlignCenter);
+    graphAlgorithmHeaderLayout->addWidget(graphAlgorithmHeader);
+    graphAlgorithmHeaderLayout->addWidget(graphComplexityHeader);
+
+    auto graphAlgorithmLayout = new QHBoxLayout;
+    auto dijkstraComplexityLabel = new QLabel("O(V^2 + E)");
+    dijkstraComplexityLabel->setAlignment(Qt::AlignCenter);
+    graphAlgorithmLayout->addWidget(dijkstraButton);
+    graphAlgorithmLayout->addWidget(dijkstraComplexityLabel);
+
+    auto graphAlgorithmsLayout = new QVBoxLayout;
+    graphAlgorithmsLayout->addLayout(graphAlgorithmHeaderLayout);
+    graphAlgorithmsLayout->addLayout(graphAlgorithmLayout);
+    graphAlgorithmsGroup->setLayout(graphAlgorithmsLayout);
+
+    auto graphAppearanceGroup = new QGroupBox("Appearance");
+    graphAppearanceGroup->setAlignment(Qt::AlignCenter);
+
+    auto nodeColorButton = new QPushButton("Choose...");
+    auto graphBackgroundButton = new QPushButton("Choose...");
+
+    auto nodeColorLayout = new QHBoxLayout;
+    nodeColorLayout->addWidget(new QLabel("Node color"));
+    nodeColorLayout->addWidget(nodeColorButton);
+
+    auto graphBackgroundLayout = new QHBoxLayout;
+    graphBackgroundLayout->addWidget(new QLabel("Background color"));
+    graphBackgroundLayout->addWidget(graphBackgroundButton);
+
+    auto graphAppearanceLayout = new QVBoxLayout;
+    graphAppearanceLayout->addLayout(nodeColorLayout);
+    graphAppearanceLayout->addLayout(graphBackgroundLayout);
+    graphAppearanceGroup->setLayout(graphAppearanceLayout);
 
     auto graphSettingsLayout = new QVBoxLayout;
-    graphSettingsLayout->addLayout(nodesLayout);
-    graphSettingsLayout->addWidget(shuffleButton);
-    graphSettingsLayout->addWidget(connectButton);
+    graphSettingsLayout->addWidget(graphSetupGroup);
+    graphSettingsLayout->addWidget(graphAlgorithmsGroup);
+    graphSettingsLayout->addWidget(graphAppearanceGroup);
     graphSettingsLayout->addStretch();
     graphSettingsGroup->setLayout(graphSettingsLayout);
 
@@ -94,6 +145,15 @@ void MainWindow::initGui()
             graphWidget, &GraphWidget::setNodeCount);
     connect(shuffleButton, &QPushButton::clicked, graphWidget, &GraphWidget::shuffleNodes);
     connect(connectButton, &QPushButton::clicked, graphWidget, &GraphWidget::connectNodes);
+    connect(dijkstraButton, &QPushButton::clicked, graphWidget, &GraphWidget::runDijkstra);
+    connect(nodeColorButton, &QPushButton::clicked, this, [this, graphWidget]() {
+        const QColor color = QColorDialog::getColor(Qt::cyan, this, "Select Color");
+        graphWidget->setNodeColor(color);
+    });
+    connect(graphBackgroundButton, &QPushButton::clicked, this, [this, graphWidget]() {
+        const QColor color = QColorDialog::getColor(Qt::black, this, "Select Color");
+        graphWidget->setBackgroundColor(color);
+    });
 
     auto graphTab = new QWidget;
     auto graphTabLayout = new QHBoxLayout;
