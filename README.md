@@ -48,9 +48,14 @@ It is built with `Qt 6`, `C++17`, and `CMake`.
 
 ## Demo
 
-- Sorting demo: `[TODO: put video here]`
-- Graph demo: `[TODO: put video here]`
-- Binary search demo: `[TODO: put video here]`
+- Sorting demo:
+<img width="1392" height="912" alt="sorting-demo" src="https://github.com/user-attachments/assets/c805a2c1-7b77-4184-9eef-d20cb72ebd60" />
+
+- Graph demo:
+<img width="1392" height="912" alt="graph-demo" src="https://github.com/user-attachments/assets/abd31ace-510f-460b-97ec-6e424aacb66d" />
+
+- Binary search demo:
+<img width="1348" height="868" alt="binary-search-demo" src="https://github.com/user-attachments/assets/597d7a23-2d26-4162-b7e6-faf231ed9dfa" />
 
 ## Build
 
