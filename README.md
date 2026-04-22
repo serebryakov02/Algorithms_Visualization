@@ -55,7 +55,7 @@ It is built with `Qt 6`, `C++17`, and `CMake`.
 <img width="1392" height="912" alt="graph-demo" src="https://github.com/user-attachments/assets/abd31ace-510f-460b-97ec-6e424aacb66d" />
 
 - Binary search demo:
-<img width="1348" height="868" alt="binary-search-demo" src="https://github.com/user-attachments/assets/597d7a23-2d26-4162-b7e6-faf231ed9dfa" />
+<img width="1300" height="820" alt="Screen Recording 2026-04-22 at 09 19 14" src="https://github.com/user-attachments/assets/837d9b0d-693d-4009-92ce-e7144d2ff00d" />
 
 ## Build
 
